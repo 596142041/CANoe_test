@@ -1,10 +1,13 @@
 #ifndef CAN_DRIVER_H
 #define CAN_DRIVER_H
+
 #define CAN_Id_Standard   0//表示标准帧
 #define CAN_Id_Extended   1//表示扩展帧
-#define CAN_ID_STD      0
-#define CAN_ID_EXT      1
-//--以下宏定义白哦是当前设备运行的固件属性
+#define CAN_ID_STD        0
+#define CAN_ID_EXT        1
+#define CAN_RTR_Data      0 /*!< Data frame */
+#define CAN_RTR_Remote    1/*!< Remote frame */
+//--以下宏定义表示当前设备运行的固件属性
 #define CAN_BL_BOOT     0x555555
 #define CAN_BL_APP      0xAAAAAA
 //---------------------------------------------------
@@ -51,7 +54,23 @@
 #define	CAN_BL_ERR_SEND			        (-21) //发送数据出错
 #define	CAN_BL_ERR_TIME_OUT		        (-22) //超时错误
 #define	CAN_BL_ERR_CMD			        (-23) //执行命令失败
-
+typedef struct
+    {
+     unsigned char Timing0;
+     unsigned char Timing1;
+     unsigned long  int  BaudRate;
+    }CANBus_Baudrate;
+CANBus_Baudrate CANBus_Baudrate_table[27]=
+{
+    {0x00, 0x14, 1000000},//1000Kbps
+    {0x00, 0x16, 800000}, //800Kbps
+    {0x00, 0x1C, 500000}, //500Kbps
+    {0x00, 0x2F, 400000}, //400Kbps
+    {0x01, 0x1C, 250000}, //250Kbps
+    {0x01, 0x2F, 200000}, //200Kbps
+    {0x03, 0x1C, 125000}, //125Kbps
+    {0x03, 0x2F, 100000}, //100Kbps
+};
 typedef struct _PACK_INFO
 {
     unsigned char      data_type;//

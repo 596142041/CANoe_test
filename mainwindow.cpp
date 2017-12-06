@@ -29,6 +29,8 @@ MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::MainWind
     ui->Button_read->setEnabled(false);
     ui->Button_sample->setEnabled(false);
     ui->Button_sample_end->setEnabled(false);
+    ui->action_open_device->setEnabled(true);
+    ui->action_close_device->setEnabled(false);
     //设置发送数据长度的限制
     QIntValidator *pIntValidator = new QIntValidator(this);
     pIntValidator->setRange(0,8);
@@ -243,8 +245,9 @@ void MainWindow::on_Button_sample_clicked()
     ui->Button_sample->setEnabled(false);
     ui->Button_sample_end->setEnabled(true);
     ui->Button_sample->setText("数据采集中");
-    ui->file_path->clear();
-    ui->file_path->show();
+    ui->file_path_QLabel->clear();
+   // ui->file_path->clear();
+ //   ui->file_path->show();
     file_path  = QCoreApplication::applicationDirPath()+"/数据采集";
     QString line_data = NULL;
     short int read_num = 0;
@@ -441,10 +444,10 @@ void MainWindow::on_Button_sample_end_clicked()
          }
      else
          {
-              ui->file_path->setText(file_name);
+              ui->file_path_QLabel->setText(file_name);
          }
 
-     ui->file_path->show();
+     ui->file_path_QLabel->show();
      firmwareFile.close();
      start_time = 0;
      sample_timer->stop();
@@ -489,4 +492,18 @@ void MainWindow::on_Button_sample_test_clicked()
         {
 
         }
+}
+
+void MainWindow::on_action_open_device_triggered()
+{
+    on_Button_open_can_clicked();
+    ui->action_open_device->setEnabled(false);
+    ui->action_close_device->setEnabled(true);
+}
+
+void MainWindow::on_action_close_device_triggered()
+{
+    on_Button__closecan_clicked();
+    ui->action_open_device->setEnabled(true);
+    ui->action_close_device->setEnabled(false);
 }

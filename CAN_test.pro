@@ -25,10 +25,29 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+    mainwindow.cpp \
+    sample.cpp
 
 HEADERS += \
-        mainwindow.h
+    mainwindow.h \
+    win32/can_driver.h \
+    win32/ControlCAN.h \
+    sample.h \
+    sample.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    sample.ui
+
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/win32/ -lControlCAN
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/win32/ -lControlCAN
+else:unix: LIBS += -L$$PWD/win32/ -lControlCAN
+
+INCLUDEPATH += $$PWD/win32
+DEPENDPATH += $$PWD/win32
+
+RESOURCES += \
+    can_test.qrc
+RC_FILE +=ico.rc

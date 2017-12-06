@@ -3,11 +3,11 @@
 
 ////文件版本：v2.00 20150920
 //#include <cvidef.h>	//使用CVI平台开发，请使用该语句。
-
+#include <windows.h>
 //接口卡类型定义
 
-#define VCI_USBCAN1		3
-#define VCI_USBCAN2		4
+#define VCI_USBCAN1		    3
+#define VCI_USBCAN2		    4
 #define VCI_USBCAN2A		4
 
 #define VCI_USBCAN_E_U 		20

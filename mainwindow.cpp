@@ -287,23 +287,6 @@ void MainWindow::on_Button_read_clicked()
 }
 void MainWindow::on_Button_sample_clicked()
 {
-    /*
-    for(int i= 0;i< 2500;i++)
-    {
-        can_read_msg[i].TimeStamp = 0;
-        for(int j = 0;j<8;j++)
-        {
-             can_read_msg[i].Data[j] = 0;
-        }
-
-        can_read_msg[i].DataLen = 0;
-        can_read_msg[i].ID = 0;
-    }
-    VCI_ClearBuffer(4,
-                    ui->comboBox_device->currentIndex(),
-                    ui->comboBox_channel->currentIndex()
-                    );
-                    */
     ui->Button_sample->setEnabled(false);
     ui->Button_sample_end->setEnabled(true);
     ui->Button_sample->setText("数据采集中");
@@ -316,7 +299,6 @@ void MainWindow::on_Button_sample_clicked()
          {
              file_path_dir.mkdir(file_path);
          }
-     //-------------------------------------
     QString line_data = NULL;
     short int read_num = 0;
     QDateTime current_time = QDateTime::currentDateTime();
@@ -488,10 +470,8 @@ void MainWindow::sample_timer_update()
                           //4转换数据
                           for(int j = 0;j <can_read_msg[i].DataLen;j++)
                               {
-                                 // data_line_temp.sprintf("0x%02X",can_read_msg[i].Data[j]);
                                   if(j!=can_read_msg[i].DataLen-1)
                                       {
-                                         //data_line_temp = data_line_temp+" ";
                                         data_line_temp.sprintf("0x%02X ",can_read_msg[i].Data[j]);
                                       }
                                   else

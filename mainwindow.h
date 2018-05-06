@@ -61,6 +61,9 @@ class MainWindow : public QMainWindow
         unsigned char USB_CAN_status;
         Ui::MainWindow *ui;
         int CAN_GetBaudRateNum(unsigned int BaudRate);
+        int CAN_GetError_info(int error_state);
+        int Open_device(DWORD DeviceType,DWORD DeviceInd,DWORD CANInd,int baud);//输入参数:设备类型,设备序号,设备通道号,波特率
+        int Close_devive(DWORD DeviceType,DWORD DeviceInd,DWORD CANInd);
         qint64 start_time;//记录当前启动时间
         unsigned char start_time_flag;//启动时间记录标志,当按下采样按钮时,首先读取数据,如果有数据,这将标志位置一
         QTimer *sample_timer;//定时器

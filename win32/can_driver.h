@@ -1,6 +1,6 @@
 #ifndef CAN_DRIVER_H
 #define CAN_DRIVER_H
-
+#include <QString>
 #define CAN_Id_Standard   0//表示标准帧
 #define CAN_Id_Extended   1//表示扩展帧
 #define CAN_ID_STD        0
@@ -54,12 +54,39 @@
 #define	CAN_BL_ERR_SEND			        (-21) //发送数据出错
 #define	CAN_BL_ERR_TIME_OUT		        (-22) //超时错误
 #define	CAN_BL_ERR_CMD			        (-23) //执行命令失败
+#define CAN_ERR_OPEN                    (-24) //打开设备失败
+#define CAN_ERR_Init                    (-25)//初始化设备失败
+#define CAN_ERR_Start                   (-26)//启动设备失败
+#define CAN_ERR_Reset                   (-27)//复位设备失败
+#define CAN_ERR_Close                   (-28)//关闭设备失败
+typedef struct _ERROR_INFO
+{
+   int error_ind;
+   QString error_str;
+}ERROR_INFO;
+ERROR_INFO ERROR_INFO_table[20] =
+{
+    {CAN_SUCCESS,"函数执行成功"},
+    {CAN_ERR_NOT_SUPPORT,"适配器不支持该函数"},
+    {CAN_ERR_USB_WRITE_FAIL,"USB写数据失败"},
+    {CAN_ERR_USB_READ_FAIL,"USB读数据失败"},
+    {CAN_ERR_CMD_FAIL,"命令执行失败"},
+    {CAN_BL_ERR_CONFIG,"配置设备错误"},
+    {CAN_BL_ERR_SEND, "发送数据出错"},
+    {CAN_BL_ERR_TIME_OUT, "超时错误"},
+    {CAN_BL_ERR_CMD, "执行命令失败"},
+    {CAN_ERR_OPEN, "打开设备失败"},
+    {CAN_ERR_Init, "初始化设备失败"},
+    {CAN_ERR_Start, "启动设备失败"},
+    {CAN_ERR_Reset, "复位设备失败"},
+    {CAN_ERR_Close, "关闭设备失败"},
+};
 typedef struct
-    {
-     unsigned char Timing0;
-     unsigned char Timing1;
-     unsigned long  int  BaudRate;
-    }CANBus_Baudrate;
+{
+ unsigned char Timing0;
+ unsigned char Timing1;
+ unsigned long  int  BaudRate;
+}CANBus_Baudrate;
 CANBus_Baudrate CANBus_Baudrate_table[27]=
 {
     {0x00, 0x14, 1000000},//1000Kbps
@@ -151,16 +178,17 @@ typedef struct _Device_INFO
         unsigned   int FW_Version;//固件版本
 }Device_INFO;
 //5.定义CAN Bootloader命令列表
-typedef  struct  _CBL_CMD_LIST{
-    //Bootloader相关命令
-        unsigned char   Erase;			//擦出APP储存扇区数据
-        unsigned char   WriteInfo;		//设置多字节写数据相关参数（写起始地址，数据量）
+typedef  struct  _CBL_CMD_LIST//Bootloader相关命令
+{
+
+    unsigned char   Erase;			//擦出APP储存扇区数据
+    unsigned char   WriteInfo;		//设置多字节写数据相关参数（写起始地址，数据量）
     unsigned char	Write;	        //以多字节形式写数据
-        unsigned char	Check;		    //检测节点是否在线，同时返回固件信息
+    unsigned char	Check;		    //检测节点是否在线，同时返回固件信息
     unsigned char	SetBaudRate;	//设置节点波特率
     unsigned char	Excute;			//执行固件
     //节点返回状态
-        unsigned char	CmdSuccess;		//命令执行成功
-        unsigned char	CmdFaild;		//命令执行失败
+    unsigned char	CmdSuccess;		//命令执行成功
+    unsigned char	CmdFaild;		//命令执行失败
 } CBL_CMD_LIST,*PCBL_CMD_LIST;
 #endif // CAN_DRIVER_H

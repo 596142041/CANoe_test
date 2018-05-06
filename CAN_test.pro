@@ -32,7 +32,6 @@ HEADERS += \
     mainwindow.h \
     win32/can_driver.h \
     win32/ControlCAN.h \
-    sample.h \
     sample.h
 
 FORMS += \

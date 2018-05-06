@@ -9,8 +9,8 @@ MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::MainWind
     USB_CAN_status = 0;
     ui->setupUi(this);
     VCI_BOARD_INFO1 vci;
-    ui->comboBox_channel->setCurrentIndex(1);
-    ui->baudRateComboBox->setCurrentIndex(2);
+    ui->comboBox_channel->setCurrentIndex(0);
+    ui->baudRateComboBox->setCurrentIndex(4);
     //检测是否有CAN连接
     ret = VCI_FindUsbDevice(&vci);
     if(ret <= 0)
@@ -67,21 +67,105 @@ int MainWindow::CAN_GetBaudRateNum(unsigned int BaudRate)
     }
     return 0;
 }
+int MainWindow::CAN_GetError_info(int error_state)
+{
+        for(int i=0;i<27;i++)
+        {
+            if(error_state == ERROR_INFO_table[i].error_ind)
+            {
+                return i;
+            }
+        }
+        return 0;
+}
+int MainWindow::Open_device(DWORD DeviceType,DWORD DeviceInd,DWORD CANInd,int baud)//输入参数:设备类型,设备序号,设备通道号
+{
+        bool state;
+        state = VCI_OpenDevice(DeviceType,DeviceInd,0);
+        if(!state)
+        {
+            return CAN_ERR_OPEN;
+        }
+        state = 0;
+        VCI_INIT_CONFIG VCI_init;
+        VCI_init.Mode        = 0x00;
+        VCI_init.Filter      = 0x01;
+        VCI_init.AccCode     = 0x00000000;
+        VCI_init.AccMask     = 0xFFFFFFFF;
+        VCI_init.Reserved    = 0x00;
+        VCI_init.Timing0  =  CANBus_Baudrate_table[CAN_GetBaudRateNum(baud)].Timing0;//波特率的配置
+        VCI_init.Timing1  =  CANBus_Baudrate_table[CAN_GetBaudRateNum(baud)].Timing1;//波特率的配置
+        state = VCI_InitCAN(DeviceType,DeviceInd,CANInd,&VCI_init);
+        if(state == 0)
+            {
+                return CAN_ERR_Init;
+            }
+        state = 0;
+        state = VCI_StartCAN(DeviceType,DeviceInd,CANInd);
+        if(state!=1)
+        {
+            return CAN_ERR_Start;
+        }
+        VCI_ClearBuffer(DeviceType,DeviceInd,CANInd);
+        return CAN_SUCCESS;
+}
+int MainWindow::Close_devive(DWORD DeviceType,DWORD DeviceInd,DWORD CANInd)
+{
+        int ret;
+        ret = VCI_ResetCAN(DeviceType,DeviceInd,CANInd);
+        if(ret != 1)
+            {
+                return CAN_ERR_Reset;
+            }
+        ret = VCI_CloseDevice(DeviceType,DeviceInd);
+        if(ret != 1)
+            {
+                return CAN_ERR_Close;
+            }
+     return CAN_SUCCESS;
+}
 void MainWindow::on_Button_open_can_clicked()
 {
 
-    bool state;
-    state = VCI_OpenDevice(4,ui->comboBox_device->currentIndex(),0);
-    if(!state)
-    {
-        QMessageBox::warning(this,
-                             QStringLiteral("警告"),
-                             QStringLiteral("打开设备失败！")
-                             );
-        ui->Button_open_can->setText(tr("无设备"));
-        USB_CAN_status = 1;
-        return;
-    }
+    int state;
+    ERROR_INFO error_info;
+    QString str          = ui->baudRateComboBox->currentText();
+    str.resize(str.length()-4);
+    int baud = str.toInt(NULL,10)*1000;
+    state = Open_device(4,ui->comboBox_device->currentIndex(),ui->comboBox_channel->currentIndex(),baud);
+    error_info.error_ind = ERROR_INFO_table[CAN_GetError_info(state)].error_ind;
+    error_info.error_str = ERROR_INFO_table[CAN_GetError_info(state)].error_str;
+    if(error_info.error_ind != CAN_SUCCESS)
+        {
+            if(error_info.error_ind == CAN_ERR_OPEN)
+            {
+                QMessageBox::warning(this,
+                                     QStringLiteral("警告"),
+                                     error_info.error_str
+                                     );
+                ui->Button_open_can->setText(tr("无设备"));
+                USB_CAN_status = 1;
+                return;
+            }
+            if(error_info.error_ind == CAN_ERR_Init)
+                {
+                    QMessageBox::warning(this,
+                                         QStringLiteral("警告"),
+                                         error_info.error_str
+                                         );
+                    USB_CAN_status = 3;
+                    return;
+                }
+            if(error_info.error_ind == CAN_ERR_Start)
+            {
+                QMessageBox::warning(this,
+                                     QStringLiteral("警告"),
+                                      error_info.error_str
+                                     );
+                USB_CAN_status = 3;
+                return;
+            }
+        }
     else
     {
         if((USB_CAN_status == 1)||(USB_CAN_status == 0))
@@ -89,81 +173,40 @@ void MainWindow::on_Button_open_can_clicked()
             USB_CAN_status = 0;
             ui->Button_open_can->setText(tr("连接"));
         }
+        USB_CAN_status = 0x04;
+        VCI_ClearBuffer(4,
+                        ui->comboBox_device->currentIndex(),
+                        ui->comboBox_channel->currentIndex()
+                        );
+        ui->Button_open_can->setEnabled(false);
+        ui->baudRateComboBox->setEnabled(false);
+        ui->Button__closecan->setEnabled(true);
+        ui->comboBox_channel->setEnabled(false);
+        ui->comboBox_device->setEnabled(false);
+        ui->Button_send->setEnabled(true);
+        ui->Button_read->setEnabled(true);
+        ui->Button_sample->setEnabled(true);
+        ui->Button_sample_end->setEnabled(false);
+        ui->action_open_device->setEnabled(false);
+        ui->action_close_device->setEnabled(true);
     }
-    state = 0;
-    VCI_INIT_CONFIG VCI_init;
-    VCI_init.Mode        = 0x00;
-    VCI_init.Filter      = 0x01;
-    VCI_init.AccCode     = 0x00000000;
-    VCI_init.AccMask     = 0xFFFFFFFF;
-    VCI_init.Reserved    = 0x00;
-    QString str          = ui->baudRateComboBox->currentText();
-    str.resize(str.length()-4);
-    int baud = str.toInt(NULL,10)*1000;
-    VCI_init.Timing0  =  CANBus_Baudrate_table[CAN_GetBaudRateNum(baud)].Timing0;//波特率的配置
-    VCI_init.Timing1  =  CANBus_Baudrate_table[CAN_GetBaudRateNum(baud)].Timing1;//波特率的配置
-    state = VCI_InitCAN(4,ui->comboBox_device->currentIndex(),ui->comboBox_channel->currentIndex(),&VCI_init);
-    if(state == 0)
-        {
-            QMessageBox::warning(this,
-                                 QStringLiteral("警告"),
-                                 QStringLiteral("配置设备失败！")
-                                 );
-            USB_CAN_status = 3;
-            return;
-        }
-    state = 0;
-    state = VCI_StartCAN(4,
-                         ui->comboBox_device->currentIndex(),
-                         ui->comboBox_channel->currentIndex()
-                         );
-    if(state!=1)
-    {
-        QMessageBox::warning(this,
-                             QStringLiteral("警告"),
-                             QStringLiteral("配置设备失败 USB_CAN_status = 6 ！")
-                             );
-        USB_CAN_status = 3;
-        return;
-    }
-    USB_CAN_status = 0x04;
-    VCI_ClearBuffer(4,
-                    ui->comboBox_device->currentIndex(),
-                    ui->comboBox_channel->currentIndex()
-                    );
-    ui->Button_open_can->setEnabled(false);
-    ui->baudRateComboBox->setEnabled(false);
-    ui->Button__closecan->setEnabled(true);
-    ui->comboBox_channel->setEnabled(false);
-    ui->comboBox_device->setEnabled(false);
-    ui->Button_send->setEnabled(true);
-    ui->Button_read->setEnabled(true);
-    ui->Button_sample->setEnabled(true);
-    ui->Button_sample_end->setEnabled(false);
-
-
 }
 void MainWindow::on_Button__closecan_clicked()
 {
-        int ret;
-        ret = VCI_ResetCAN(4,ui->comboBox_device->currentIndex(),ui->comboBox_channel->currentIndex());
-        if(ret != 1)
+        int state;
+        VCI_ClearBuffer(4,
+                        ui->comboBox_device->currentIndex(),
+                        ui->comboBox_channel->currentIndex()
+                        );
+        state = Close_devive(4,ui->comboBox_device->currentIndex(),ui->comboBox_channel->currentIndex());
+        ERROR_INFO error_info;
+        error_info.error_ind = ERROR_INFO_table[CAN_GetError_info(state)].error_ind;
+        error_info.error_str = ERROR_INFO_table[CAN_GetError_info(state)].error_str;
+        if(error_info.error_ind != CAN_SUCCESS)
             {
                 QMessageBox::warning(this,
                                      QStringLiteral("警告"),
-                                     QStringLiteral("复位设备失败！")
-                                     );
-            }
-        else
-            {
-                 USB_CAN_status = 0;
-            }
-        ret = VCI_CloseDevice(4,ui->comboBox_device->currentIndex());
-        if(ret != 1)
-            {
-                QMessageBox::warning(this,
-                                     QStringLiteral("警告"),
-                                     QStringLiteral("关闭设备失败！")
+                                     error_info.error_str
                                      );
             }
         else
@@ -179,6 +222,8 @@ void MainWindow::on_Button__closecan_clicked()
         ui->Button_read->setEnabled(false);
         ui->Button_sample->setEnabled(false);
         ui->Button_sample_end->setEnabled(false);
+        ui->action_close_device->setEnabled(false);
+        ui->action_open_device->setEnabled(true);
 }
 void MainWindow::on_Button_send_clicked()
 {
@@ -242,16 +287,38 @@ void MainWindow::on_Button_read_clicked()
 }
 void MainWindow::on_Button_sample_clicked()
 {
+    /*
+    for(int i= 0;i< 2500;i++)
+    {
+        can_read_msg[i].TimeStamp = 0;
+        for(int j = 0;j<8;j++)
+        {
+             can_read_msg[i].Data[j] = 0;
+        }
+
+        can_read_msg[i].DataLen = 0;
+        can_read_msg[i].ID = 0;
+    }
+    VCI_ClearBuffer(4,
+                    ui->comboBox_device->currentIndex(),
+                    ui->comboBox_channel->currentIndex()
+                    );
+                    */
     ui->Button_sample->setEnabled(false);
     ui->Button_sample_end->setEnabled(true);
     ui->Button_sample->setText("数据采集中");
-    ui->file_path_QLabel->clear();
-   // ui->file_path->clear();
- //   ui->file_path->show();
+    ui->file_path_textBrowser->clear();
+    ui->lcd_sample_counter->display(0);
     file_path  = QCoreApplication::applicationDirPath()+"/数据采集";
+    //此处判断当前文件文件夹是否存在,如果不存在就创建一个文件夹
+     QDir file_path_dir(file_path);
+     if(file_path_dir.exists() == false)
+         {
+             file_path_dir.mkdir(file_path);
+         }
+     //-------------------------------------
     QString line_data = NULL;
     short int read_num = 0;
-    //qint64 start_time = 0;
     QDateTime current_time = QDateTime::currentDateTime();
     //第一步.确定文件名
     file_name = current_time.toString("yyyy-MM-dd_hh_mm_ss")+".asc";
@@ -290,6 +357,7 @@ internal events logged
 0.000000 start of measurement
 */
     //第一步 写入当时的时间
+     ULONG read_len = 0;
     line_data = current_time.toString("yyyy-MM-dd hh:mm:ss");
     QTextStream in(&firmwareFile);
     in<<line_data<<endl;
@@ -305,11 +373,11 @@ internal events logged
                        return;
                        break;
                default:
-                   VCI_Receive(4,
+                 read_len =   VCI_Receive(4,
                                ui->comboBox_device->currentIndex(),
                                ui->comboBox_channel->currentIndex(),
                                &can_read_msg[0],
-                               read_num,
+                               2500,
                                0
                                );
                    start_time  = can_read_msg[0].TimeStamp;
@@ -324,9 +392,9 @@ internal events logged
 #endif
     float time_temp;
     QString data_line_temp;
-    if(read_num >0)
+    if(read_len >0)
         {
-            for(int i = 0;i<read_num;i++)
+            for(ULONG i = 0;i<read_len;i++)
                 {
                     sample_counter++;
                     //1 换算时间
@@ -344,7 +412,7 @@ internal events logged
                       //4转换数据
                       for(int j = 0;j <can_read_msg[i].DataLen;j++)
                           {
-                              data_line_temp.sprintf("0x%X",can_read_msg[i].Data[j]);
+                              data_line_temp.sprintf("0x%02X",can_read_msg[i].Data[j]);
                               if(j!=can_read_msg[i].DataLen-1)
                                   {
                                      data_line_temp = data_line_temp+" ";
@@ -355,22 +423,31 @@ internal events logged
                       //将时间记录进去用于测试使用,发布时删除
 
 #if DEBUG
-//data_line_temp.sprintf("%d",can_read_msg[i].TimeStamp);
-//line_data = line_data+data_line_temp;
 qDebug()<<"line_data = "<<line_data<<"line_data time = "<<can_read_msg[i].TimeStamp<<"can_read_msg[i].TimeFlag ="<<can_read_msg[i].TimeFlag;
-in<<data_line_temp.sprintf("%d",can_read_msg[i].TimeStamp)<<endl;
 #endif
                         ui->lcd_sample_counter->display(sample_counter);
                       in<<line_data<<endl;
                 }
         }
     sample_timer->start(sample_time);
+    for(int i= 0;i< 2500;i++)
+    {
+        can_read_msg[i].TimeStamp = 0;
+        for(int j = 0;j<8;j++)
+        {
+             can_read_msg[i].Data[j] = 0;
+        }
+
+        can_read_msg[i].DataLen = 0;
+        can_read_msg[i].ID = 0;
+    }
 }
 
 void MainWindow::sample_timer_update()
 {
     QTextStream in(&firmwareFile);
     short int read_num = 0;
+    ULONG read_len = 0;
     float time_temp = 0;
     QString data_line_temp = NULL;
      QString line_data     = NULL;
@@ -382,19 +459,19 @@ void MainWindow::sample_timer_update()
                        return;
                        break;
                default:
-                   VCI_Receive(4,
-                               ui->comboBox_device->currentIndex(),
-                               ui->comboBox_channel->currentIndex(),
-                               &can_read_msg[0],
-                               read_num,
-                               0
-                               );
+                   read_len =  VCI_Receive(4,
+                                           ui->comboBox_device->currentIndex(),
+                                           ui->comboBox_channel->currentIndex(),
+                                           &can_read_msg[0],
+                                           2500,
+                                           0
+                                           );
                     VCI_ClearBuffer(4,ui->comboBox_device->currentIndex(),ui->comboBox_channel->currentIndex());
                        break;
         }
-    if(read_num >0)
+    if(read_len >0)
             {
-                for(int i = 0;i<read_num;i++)
+                for(ULONG i = 0;i<read_len;i++)
                     {
                         //1 换算时间
                         time_temp = (can_read_msg[i].TimeStamp-start_time)/10000.0;
@@ -411,25 +488,38 @@ void MainWindow::sample_timer_update()
                           //4转换数据
                           for(int j = 0;j <can_read_msg[i].DataLen;j++)
                               {
-                                  data_line_temp.sprintf("0x%X",can_read_msg[i].Data[j]);
+                                 // data_line_temp.sprintf("0x%02X",can_read_msg[i].Data[j]);
                                   if(j!=can_read_msg[i].DataLen-1)
                                       {
-                                         data_line_temp = data_line_temp+" ";
+                                         //data_line_temp = data_line_temp+" ";
+                                        data_line_temp.sprintf("0x%02X ",can_read_msg[i].Data[j]);
+                                      }
+                                  else
+                                      {
+                                        data_line_temp.sprintf("0x%02X",can_read_msg[i].Data[j]);
                                       }
                                   line_data = line_data+data_line_temp;
 
                               }
     #if DEBUG
-//data_line_temp.sprintf("%d",can_read_msg[i].TimeStamp);
-//line_data = line_data+data_line_temp;
 qDebug()<<"line_data = "<<line_data<<"line_data time = "<<can_read_msg[i].TimeStamp<<"can_read_msg[i].TimeFlag ="<<can_read_msg[i].TimeFlag;
- in<<data_line_temp.sprintf("%d",can_read_msg[i].TimeStamp)<<endl;
     #endif
                           sample_counter++;
                           ui->lcd_sample_counter->display(sample_counter);
                           in<<line_data<<endl;
                     }
             }
+    for(int k = 0;k< 2500;k++)
+    {
+        can_read_msg[k].TimeStamp = 0;
+        for(int j = 0;j<8;j++)
+        {
+             can_read_msg[k].Data[j] = 0;
+        }
+
+        can_read_msg[k].DataLen = 0;
+        can_read_msg[k].ID = 0;
+    }
 }
 void MainWindow::on_Button_sample_end_clicked()
 {
@@ -437,17 +527,19 @@ void MainWindow::on_Button_sample_end_clicked()
      ui->Button_sample->setText("采集数据");
      ui->Button_sample->setEnabled(true);
      ui->Button_sample_end->setEnabled(false);
+#if DEBUG
      qDebug()<<"firmwareFile.size() = "<<firmwareFile.size();
+#endif
      if(firmwareFile.size() < 105)
          {
              firmwareFile.remove();
          }
      else
          {
-              ui->file_path_QLabel->setText(file_name);
+              ui->file_path_textBrowser->setText(file_name);
          }
 
-     ui->file_path_QLabel->show();
+     ui->file_path_textBrowser->show();
      firmwareFile.close();
      start_time = 0;
      sample_timer->stop();

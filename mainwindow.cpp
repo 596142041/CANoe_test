@@ -50,11 +50,20 @@ MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::MainWind
     //连接槽函数
     sample_timer = new QTimer(this);
     connect(sample_timer,&QTimer::timeout,this,&this->sample_timer_update,Qt::AutoConnection);
+   //connect(this,&MainWindow)
 }
 MainWindow::~MainWindow()
+{
+    delete ui;
+}
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    (void)event;
+    if(USB_CAN_status == 4)
     {
-        delete ui;
+         on_Button__closecan_clicked();
     }
+}
 int MainWindow::CAN_GetBaudRateNum(unsigned int BaudRate)
 {
 

@@ -301,7 +301,17 @@ void MainWindow::on_Button_sample_clicked()
     ui->Button_sample->setText("数据采集中");
     ui->file_path_textBrowser->clear();
     ui->lcd_sample_counter->display(0);
-    file_path  = QCoreApplication::applicationDirPath()+"/数据采集";
+    //设置通道数据保存路径
+    //将通道0和通道1分开处理
+    if(ui->comboBox_channel->currentIndex() == 0)
+    {
+         file_path  = QCoreApplication::applicationDirPath()+"/数据采集"+"/CAN0数据";
+    }
+    else
+    {
+         file_path  = QCoreApplication::applicationDirPath()+"/数据采集"+"/CAN1数据";
+    }
+
     //此处判断当前文件文件夹是否存在,如果不存在就创建一个文件夹
      QDir file_path_dir(file_path);
      if(file_path_dir.exists() == false)

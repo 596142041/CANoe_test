@@ -20,7 +20,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>CANoe</string>
   </property>
   <property name="windowIcon">
    <iconset resource="can_test.qrc">

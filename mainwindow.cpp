@@ -316,7 +316,7 @@ void MainWindow::on_Button_sample_clicked()
      QDir file_path_dir(file_path);
      if(file_path_dir.exists() == false)
          {
-             file_path_dir.mkdir(file_path);
+             file_path_dir.mkpath(file_path);
          }
     QString line_data = NULL;
     short int read_num = 0;

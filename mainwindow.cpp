@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "can_driver.h"
-#define sample_time 200 //单位为毫秒
+#define sample_time 100 //单位为毫秒
 MainWindow::MainWindow(QWidget *parent) :QMainWindow(parent),ui(new Ui::MainWindow)
 {
     int ret;
@@ -322,7 +322,7 @@ void MainWindow::on_Button_sample_clicked()
     short int read_num = 0;
     QDateTime current_time = QDateTime::currentDateTime();
     //第一步.确定文件名
-    file_name = current_time.toString("yyyy-MM-dd_hh_mm_ss")+".asc";
+    file_name = current_time.toString("yyyy-MM-dd-hh-mm-ss")+".asc";
 #if DEBUG
     qDebug()<<"file_name_temp =  "<<file_name;
 #endif
